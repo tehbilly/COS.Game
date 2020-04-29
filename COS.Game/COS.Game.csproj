@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+<!--      <PackageReference Include="Myra.Xenko" Version="0.9.9.200" />-->
+      <PackageReference Include="Serilog" Version="2.9.0" />
+      <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+      <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
+      <PackageReference Include="SFML.Net" Version="2.5.0" />
+      <PackageReference Include="Stride.Input" Version="4.0.0.1-beta02-0926" />
+<!--      <PackageReference Include="Stride.Core" Version="4.0.0.1-beta02-0926" />-->
+<!--      <PackageReference Include="Stride.Engine" Version="4.0.0.1-beta02-0926" />-->
+<!--      <PackageReference Include="Xenko.Core" Version="3.1.0.1" />-->
+<!--      <PackageReference Include="Xenko.Engine" Version="3.1.0.1" />-->
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="Resources\**\*.*" />
+    </ItemGroup>
+</Project>

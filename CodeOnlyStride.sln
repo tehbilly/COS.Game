@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "COS.Game", "COS.Game\COS.Game.csproj", "{006BA64D-918F-4EB5-82A4-11157FAA4C29}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "COS.Game.Windows", "COS.Game.Windows\COS.Game.Windows.csproj", "{DDB90E9D-E307-4146-846F-9DB707A2AF4D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{006BA64D-918F-4EB5-82A4-11157FAA4C29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{006BA64D-918F-4EB5-82A4-11157FAA4C29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{006BA64D-918F-4EB5-82A4-11157FAA4C29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{006BA64D-918F-4EB5-82A4-11157FAA4C29}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DDB90E9D-E307-4146-846F-9DB707A2AF4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DDB90E9D-E307-4146-846F-9DB707A2AF4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DDB90E9D-E307-4146-846F-9DB707A2AF4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DDB90E9D-E307-4146-846F-9DB707A2AF4D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

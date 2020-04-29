@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../COS.Game/COS.Game.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <None Include="./Assets/**" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+</Project>
