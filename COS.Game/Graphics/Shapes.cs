@@ -27,12 +27,12 @@ namespace COS.Game.Graphics
 
         public void SetScale(float x, float y)
         {
-            Size = new Vector2(x, y);
+            Scale = new Vector2(x, y);
         }
 
         public void SetScale(float scale)
         {
-            Size = new Vector2(scale, scale);
+            Scale = new Vector2(scale, scale);
         }
     }
 }
