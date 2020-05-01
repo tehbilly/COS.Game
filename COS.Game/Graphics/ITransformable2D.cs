@@ -2,10 +2,9 @@
 
 namespace COS.Game.Graphics
 {
-    public interface ITransformable2D<TSize, TScale>
+    public interface ITransformable2D<TScale>
     {
         Vector2 Position { get; set; }
-        TSize Size { get; set; }
         TScale Scale { get; set; }
     }
 }

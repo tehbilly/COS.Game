@@ -1,6 +1,6 @@
-﻿using System;
-using System.Numerics;
+﻿using System.Numerics;
 using COS.Game.Graphics;
+using SFML.Window; // TODO: Either figure out a clean way to wrap keyboard keys, or give up on wrapping
 
 namespace COS.Game.Windows
 {
@@ -8,33 +8,39 @@ namespace COS.Game.Windows
     {
         public static void Main(string[] args)
         {
-            using var engine = new Engine(new WindowOptions("GameWindow", 800, 600));
-            engine.Systems.Add(new MyInitSystem(engine));
+            var engineBuilder = new EngineBuilder()
+                // I don't know if using a property is nicer than a getter method, but here it is.
+                .WindowOptions
+                    .Name("Game Window")
+                    .Width(1024)
+                    .Height(768)
+                    .Flags(WindowFlags.Titlebar | WindowFlags.Resize | WindowFlags.Close)
+                    // Calling the End{Section} method lets you keep using the builder fluently
+                    .EndWindowOptions();
 
-            // Since I don't have any interesting drawerings happening, make a jiggly rectangle instead
-            var rectangle = new Rectangle2D();
+            // Can use the builder without the End{Section} methods if you want
+            engineBuilder.Systems
+                // Just a hacky hack to display registering an instance of something to be injected
+                    .Register(new Rectangle2D())
+                    // Registering systems by type
+                    .Register<MyInitSystem>()
+                    .Register<MyUpdateSystem>()
+                    .Register<MyDrawSystem>()
+                    .Register<DebugTextHandler>();
 
-            // Here's using the base Entity class as-is, and just adding components to define it
-            var hero = new Entity();
-            var sprite = new Sprite(Texture.FromFile("Assets/hero.png"))
-            {
-                Position = new Vector2(600, 400)
-            };
-            hero.AddComponent(new SpriteComponent(sprite));
-            
-            // Either way it's done, I'll probably add a delegate directly on Engine like AddEntity, instead of
-            // directly accessing the EntityManager
-            engine.EntityManager.Add(hero);
+            // Build the engine, finalizing the DI container and all that jazz. Everything else remains the same
+            using var engine = engineBuilder.Build();
             engine.EntityManager.Add(new Hero());
-
-            engine.Systems.Add(new MyUpdateSystem(engine, rectangle));
-            engine.Systems.Add(new MyDrawSystem(engine, rectangle));
-
+            
+            var text = engine.EntityManager.CreateEntity("Debug Info");
+            text.AddComponent(new TextComponent(new Text("Elapsed Time: 0.00")));
 
             engine.Run();
         }
     }
 
+    // EngineBuilder.Services.Register<Type>() registers a class and allows it to be resolvable by either it's type
+    // directly _or_ by implemented interfaces. Drastically simplifies the code to manage/find all IInitSystems, etc.
     public class MyInitSystem : IInitSystem
     {
         private readonly Engine _engine;
@@ -48,64 +54,62 @@ namespace COS.Game.Windows
         {
             var logger = _engine.Logger.ForContext(typeof(MyInitSystem));
             logger.Info("Setting UpdatesPerSecond to 10");
-            _engine.UpdatesPerSecond = 10;
+            _engine.UpdatesPerSecond = 120;
         }
     }
 
     public class MyUpdateSystem : IUpdateSystem
     {
-        private readonly Random _random = new Random();
-        private readonly Engine _engine;
+        private readonly EntityManager _entityManager;
+        private readonly Input _input;
+        private readonly GameWindow _window;
         private readonly Rectangle2D _rectangle;
+        private const int Padding = 10;
 
-        public MyUpdateSystem(Engine engine, Rectangle2D rectangle)
+        public MyUpdateSystem(EntityManager entityManager, Input input, GameWindow window, Rectangle2D rectangle)
         {
-            _engine = engine;
+            _entityManager = entityManager;
+            _input = input;
+            _window = window;
             _rectangle = rectangle;
         }
 
         public void Update(float dt)
         {
-            var window = _engine.Window;
-
-            foreach (var entity in _engine.EntityManager.EntitiesWithComponent<SpriteComponent>())
+            foreach (var entity in _entityManager.EntitiesWithComponent<HeroSpriteComponent>())
             {
-                var sprite = entity.GetComponent<SpriteComponent>().Sprite;
+                if (!(entity is Hero hero)) continue;
+                var speed = hero.Speed;
 
-                // Adjust scale between 85% and 100% randomly
-                var newScale = _random.NextDouble() * 0.15 + 0.85;
-                sprite.Scale = new Vector2((float) newScale);
+                var sprite = entity.GetComponent<HeroSpriteComponent>().Sprite;
 
-                SkitterX(sprite, _random.Next(0, 6));
-                SkitterY(sprite, _random.Next(0, 6));
+                var x = sprite.Position.X;
+                var y = sprite.Position.Y;
+                if (_input.IsKeyDown(Keyboard.Key.Right))
+                    x += speed * dt;
+                else if (_input.IsKeyDown(Keyboard.Key.Left))
+                    x -= speed * dt;
+                if (_input.IsKeyDown(Keyboard.Key.Down))
+                    y += speed * dt;
+                else if (_input.IsKeyDown(Keyboard.Key.Up))
+                    y -= speed * dt;
+
+                if (x < 0) x = 0;
+                var maxX = _window.Size.X - sprite.Size.X;
+                if (x > maxX) x = maxX;
+                if (y < 0) y = 0;
+                var maxY = _window.Size.Y - sprite.Size.Y;
+                if (y > maxY) y = maxY;
+
+                sprite.SetX(x);
+                sprite.SetY(y);
             }
 
-
-            var padding = _random.Next(5, 10);
-            var centerX = window.Size.X / 2;
-            var centerY = window.Size.Y / 2;
+            var windowSize = _window.Size;
+            var centerX = windowSize.X / 2;
+            var centerY = windowSize.Y / 2;
             _rectangle.Position = new Vector2(centerX - _rectangle.Width / 2, centerY - _rectangle.Height / 2);
-            _rectangle.Size = new Vector2(window.Size.X / 4 - padding, window.Size.Y / 4 - padding);
-        }
-
-        private void SkitterX(Sprite sprite, float padding)
-        {
-            var newX = sprite.Position.X + padding;
-            if (_random.NextDouble() > 0.6) newX -= padding * 2;
-            if (newX < 0) newX += padding;
-            if (newX + sprite.Size.X > _engine.Window.Size.X)
-                newX = _engine.Window.Size.X - sprite.Size.X;
-            sprite.SetX(newX);
-        }
-
-        private void SkitterY(Sprite sprite, float padding)
-        {
-            var newY = sprite.Position.X + padding;
-            if (_random.NextDouble() > 0.6) newY -= padding * 2;
-            if (newY < 0) newY += padding;
-            if (newY + sprite.Size.Y > _engine.Window.Size.Y)
-                newY = _engine.Window.Size.Y - sprite.Size.Y;
-            sprite.SetY(newY);
+            _rectangle.Size = new Vector2(windowSize.X / 4 - Padding, windowSize.Y / 4 - Padding);
         }
     }
 
@@ -122,15 +126,14 @@ namespace COS.Game.Windows
 
         public void Draw()
         {
-            // This DrawRectangle is just from me testing and will go away
-            _engine.Window.DrawRectangle(_rectangle.Width, _rectangle.Height, _rectangle.X, _rectangle.Y);
-            
+            _engine.Window.Draw(_rectangle);
+
             // Here's where I was thinking of ways that extending a base class rather than implementing an interface
             // might let me make things a little bit cleaner. Either way, this totally works!
-            var entities = _engine.EntityManager.EntitiesWithComponent<SpriteComponent>();
+            var entities = _engine.EntityManager.EntitiesWithComponent<HeroSpriteComponent>();
             foreach (var entity in entities)
             {
-                _engine.Window.Draw(entity.GetComponent<SpriteComponent>().Sprite);
+                _engine.Window.Draw(entity.GetComponent<HeroSpriteComponent>().Sprite);
             }
         }
     }
@@ -139,19 +142,60 @@ namespace COS.Game.Windows
     // I guess it's kind've like an entity factory in some systems I've seen.
     public class Hero : Entity
     {
-        public override void Initialize()
-        {
-            AddComponent(new SpriteComponent(new Sprite(Texture.FromFile("Assets/hero.png"))));
-        }
+        public int Speed { get; } = 150;
+        public override void Initialize() =>
+            AddComponent(new HeroSpriteComponent(new Sprite(Texture.FromFile("Assets/hero.png"))
+            {
+                Position = new Vector2(100, 100)
+            }));
     }
 
-    public class SpriteComponent : Component
+    public class HeroSpriteComponent : Component
     {
         public Sprite Sprite { get; }
 
-        public SpriteComponent(Sprite sprite)
+        public HeroSpriteComponent(Sprite sprite)
         {
             Sprite = sprite;
+        }
+    }
+
+    public class TextComponent : Component
+    {
+        public Text Text { get; }
+        
+        public TextComponent(Text text)
+        {
+            Text = text;
+        }
+    }
+    
+    public class DebugTextHandler : IUpdateSystem, IDrawSystem
+    {
+        private readonly EntityManager _entityManager;
+        private readonly GameWindow _window;
+        private float _elapsed;
+
+        public DebugTextHandler(EntityManager entityManager, GameWindow window)
+        {
+            _entityManager = entityManager;
+            _window = window;
+        }
+
+        public void Update(float dt)
+        {
+            _elapsed += dt;
+            foreach (var entity in _entityManager.EntitiesWithComponent<TextComponent>())
+            {
+                var text = entity.GetComponent<TextComponent>();
+                text.Text.DisplayedString = $"Elapsed time: {_elapsed:0.000}s";
+            }
+        }
+
+        public void Draw()
+        {
+            foreach (var entity in _entityManager.EntitiesWithComponent<TextComponent>())
+                _window.Draw(entity.GetComponent<TextComponent>().Text);
         }
     }
 }

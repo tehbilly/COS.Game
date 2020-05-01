@@ -1,6 +1,7 @@
-﻿using System;
-using COS.Game.Services;
-using Serilog;
+﻿﻿using System;
+using System.Collections.Generic;
+using Autofac;
+using IContainer = Autofac.IContainer;
 
 namespace COS.Game
 {
@@ -11,38 +12,36 @@ namespace COS.Game
 
         private bool _running;
         // TODO: Determine if/how this should be separated from the engine
-        public readonly GameWindow Window;
-        public readonly IServiceRegistry Services = new ServiceRegistry();
+        public GameWindow Window { get; private set; }
+        internal IContainer Container { get; set; }
         public EntityManager EntityManager { get; private set; }
-        public readonly SystemsManager Systems = new SystemsManager();
-        private readonly Input _input = new Input();
-        
-        public int UpdatesPerSecond { get; set; } = 60;
-        private float _sinceLastUpdate = 0;
 
-        public Engine(WindowOptions options)
+        private uint _updatesPerSecond = 60;
+        public uint UpdatesPerSecond
         {
-            Window = new GameWindow(options);
-            Window.KeyPressed += _input.OnKeyPressed;
-            Window.KeyReleased += _input.OnKeyReleased;
-            Initialize();
+            get => _updatesPerSecond;
+            set
+            {
+                _updatesPerSecond = value;
+                Window.SetFramerateLimit(_updatesPerSecond);
+            }
         }
 
-        private void Initialize()
+        private float _sinceLastUpdate = 0;
+
+        internal Engine() {}
+
+        /// <summary>
+        /// Perform initial setup, getting 
+        /// </summary>
+        internal void Initialize()
         {
-            EntityManager = new EntityManager(Services);
-            
-            Logger = new SerilogLogger(new LoggerConfiguration()
-                // TODO: Base this on configuration
-                .WriteTo.Console()
-                .MinimumLevel.Debug()
-                .CreateLogger());
-            
-            Services.Add(Logger);
-            Services.Add(_input);
-            
-            // Register core systems
-            Systems.Add(_input); // Runs post-update to move pressed keys to down
+            var input = Container.Resolve<Input>();
+            Window = Container.Resolve<GameWindow>();
+            Window.KeyPressed += input.OnKeyPressed;
+            Window.KeyReleased += input.OnKeyReleased;
+            EntityManager = Container.Resolve<EntityManager>();
+            Logger = Container.Resolve<ILogger>();
         }
 
         public void Run()
@@ -54,8 +53,9 @@ namespace COS.Game
             Window.Closed += (o, a) => { Stop(); };
             
             // Run any init systems
-            Systems.Init();
-            
+            foreach (var system in Container.Resolve<IEnumerable<IInitSystem>>())
+                system.Init();
+
             while (Window.IsOpen && _running)
             {
                 Window.DispatchEvents();
@@ -65,18 +65,22 @@ namespace COS.Game
                 _sinceLastUpdate += _timer.Restart().AsSeconds();
                 if (_sinceLastUpdate >= 1f / UpdatesPerSecond)
                 {
-                    Systems.Update(_sinceLastUpdate);
+                    foreach (var system in Container.Resolve<IEnumerable<IUpdateSystem>>())
+                        system.Update(_sinceLastUpdate);
+
                     _sinceLastUpdate = 0;
-                    
+
                     // Now that IUpdateSystems have been run we can run IPostUpdateSystems
-                    Systems.PostUpdate();
+                    foreach (var system in Container.Resolve<IEnumerable<IPostUpdateSystem>>())
+                        system.PostUpdate();
                 }
-                
+
                 // Now we gotta draw, pardner
-                Systems.Draw();
+                foreach (var system in Container.Resolve<IEnumerable<IDrawSystem>>())
+                    system.Draw();
                 Window.Display();
             }
-            
+
             if (Window.IsOpen) Window.Close();
         }
 

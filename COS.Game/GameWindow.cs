@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Numerics;
+using COS.Game.Graphics;
 using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
 using Sprite = COS.Game.Graphics.Sprite;
+using Text = COS.Game.Graphics.Text;
 
 namespace COS.Game
 {
@@ -46,7 +48,8 @@ namespace COS.Game
 
         public bool SetActive(bool active) => _window.SetActive(active);
 
-        public void SetFramerateLimit(uint limit) => _window.SetFramerateLimit(limit);
+        internal void SetFramerateLimit(uint limit) => _window.SetFramerateLimit(limit);
+
         internal event EventHandler<KeyEventArgs> KeyPressed
         {
             add => _window.KeyPressed += value;
@@ -59,20 +62,24 @@ namespace COS.Game
             remove => _window.KeyReleased -= value;
         }
 
+        public void Draw(Text text)
+        {
+            _window.Draw(text.SfmlText);
+        }
+
         public void Draw(Sprite sprite)
         {
             _window.Draw(sprite.SfmlSprite);
         }
-        
-        [Obsolete]
-        public void DrawRectangle(float width, float height, float x, float y)
+
+        public void Draw(Rectangle2D rect)
         {
-            _window.Draw(new RectangleShape(new Vector2f(width, height))
+            _window.Draw(new RectangleShape(new Vector2f(rect.Width, rect.Height))
             {
                 FillColor = Color.Green,
                 OutlineColor = Color.Cyan,
                 OutlineThickness = 2,
-                Position = new Vector2f(x, y),
+                Position = new Vector2f(rect.X, rect.Y),
                 Origin = new Vector2f(0, 0),
             });
         }
@@ -151,14 +158,19 @@ namespace COS.Game
     {
         /// <summary>No border / title bar (this flag and all others are mutually exclusive)</summary>
         None = 0,
+
         /// <summary>Title bar + fixed border</summary>
         Titlebar = 1,
+
         /// <summary>Titlebar + resizable border + maximize button</summary>
         Resize = 2,
+
         /// <summary>Titlebar + close button</summary>
         Close = 4,
+
         /// <summary>Fullscreen mode (this flag and all others are mutually exclusive))</summary>
         Fullscreen = 8,
+
         /// <summary>Default window style (titlebar + resize + close)</summary>
         Default = Close | Resize | Titlebar,
     }

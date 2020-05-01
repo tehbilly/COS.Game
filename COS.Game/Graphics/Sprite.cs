@@ -6,7 +6,7 @@ using SFMLSprite = SFML.Graphics.Sprite;
 
 namespace COS.Game.Graphics
 {
-    public sealed class Sprite : IDisposable
+    public sealed class Sprite : ITransformable2D<Vector2>, IDisposable
     {
         internal readonly SFMLSprite SfmlSprite;
 

@@ -6,27 +6,39 @@ namespace COS.Game
 {
     public class Entity
     {
-        public Guid ID { get; }
-        public EntityManager EntityManager { get; internal set; }
-        public string Name { get; set; }
+        public Guid ID { get; } = Guid.NewGuid();
+        public EntityManager? EntityManager { get; internal set; }
+        public string Name { get; set; } = "";
 
         internal readonly HashSet<Component> Components = new HashSet<Component>();
         internal readonly HashSet<Type> ComponentTypes = new HashSet<Type>();
 
-        public Entity(string name = null)
+        public Entity(string? name = null)
         {
-            Name = name;
+            if (name != null)
+                Name = name;
         }
 
+        /// <summary>
+        /// Implement this method in a subclass to perform entity initialization logic, such as adding default components.
+        /// </summary>
         public virtual void Initialize() {}
         
         public void AddComponent(Component component)
         {
-            ComponentTypes.Add(component.GetType());
+            var type = component.GetType();
+            if (!ComponentTypes.Contains(type))
+            {
+                ComponentTypes.Add(type);
+                // Let the entity manager know we've had a component added
+                EntityManager?.EntityComponentAdded(this, type);
+            }
             Components.Add(component);
         }
 
-        public bool HasComponent<T>() => ComponentTypes.Any(c => c == typeof(T));
+        public bool HasComponent<T>() => HasComponent(typeof(T));
+        
+        public bool HasComponent(Type type) => ComponentTypes.Any(c => c == type);
 
         internal bool HasAllComponents(params Component[] components)
         {
@@ -49,10 +61,7 @@ namespace COS.Game
             return Equals((Entity) obj);
         }
 
-        public override int GetHashCode()
-        {
-            return ID.GetHashCode();
-        }
+        public override int GetHashCode() => ID.GetHashCode();
 
         public override string ToString() => $"{GetType().Name}: {Name}";
     }

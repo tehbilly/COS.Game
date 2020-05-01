@@ -1,4 +1,4 @@
-﻿namespace COS.Game
+﻿﻿namespace COS.Game
 {
     public class Vector2u
     {
